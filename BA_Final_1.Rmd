@@ -1,0 +1,206 @@
+---
+title: "BA Sentiment Final"
+author: "Devarshi Pancholi"
+date: "12/7/2019"
+output: pdf_document
+---
+
+```{r}
+
+food <- read.csv("/Users/devarshipancholi/Desktop/fine_food.csv")
+head(food,10)
+str(food)
+
+```
+
+```{r}
+
+library(dplyr)
+pro <- food %>% group_by(asin) %>% summarise(count= n()) 
+View(pro)
+
+food_merged <- merge(x=food, y=pro, by.x= c("asin"), by.y = c("asin"),all.x= TRUE)
+View(food_merged)
+
+dim(food_merged)
+
+```
+```{r}
+
+library(dplyr)
+library(tm)
+library(quanteda)
+library(tm)
+library(SentimentAnalysis)
+library(syuzhet)
+library(quanteda)
+library(tidytext)
+library(qdap)
+
+food_merged = food_merged[food_merged$count >= 100, ]
+View(food_merged)
+
+food_summary <- select(food_merged, asin, overall, summary)
+View(food_summary)
+
+food_merged = food_merged %>% distinct(food_merged$reviewerID,food_merged$asin, .keep_all = TRUE)
+
+food_summary_merged = food_merged %>% group_by(asin) %>% summarize(n=n(),text = paste(summary, collapse = ""))
+#View(df)
+head(food_summary_merged,1)
+dim(food_summary_merged)
+
+food_summary_merged_Corpus <- SimpleCorpus(VectorSource(food_summary_merged$text))
+#Stripping any extra white space:
+food_summary_merged_Corpus <- tm_map(food_summary_merged_Corpus, stripWhitespace)
+#Transforming everything to lowercase
+food_summary_merged_Corpus <- tm_map(food_summary_merged_Corpus, content_transformer(tolower))
+#Removing numbers 
+food_summary_merged_Corpus <- tm_map(food_summary_merged_Corpus, removeNumbers)
+#Removing punctuation
+food_summary_merged_Corpus <- tm_map(food_summary_merged_Corpus, removePunctuation)
+#Removing stop words
+food_summary_merged_Corpus <- tm_map(food_summary_merged_Corpus, removeWords, stopwords("english"))
+#Stemming 
+food_summary_merged_Corpus <- tm_map(food_summary_merged_Corpus, stemDocument)
+
+DTM <- DocumentTermMatrix(food_summary_merged_Corpus)
+inspect(DTM)
+DF <- data.frame(as.matrix(DTM), stringsAsFactors=FALSE) #DTM Matrix here
+head(DF,1)
+
+```
+
+```{r}
+
+precorpus<- food_summary
+
+dim(precorpus)
+#names(precorpus)
+#head(precorpus)
+#str(precorpus)
+#head(precorpus$summary)
+
+precorpus$summary <- gsub("'", "", precorpus$summary)
+precorpus$summary <- gsub("[[:punct:]]", " ", precorpus$summary)
+precorpus$summary <- gsub("[[:cntrl:]]", " ", precorpus$summary)
+precorpus$summary <- gsub("^[[:space:]]+", "",precorpus$summary)
+precorpus$summary <- gsub("[[:space:]]+$", "",precorpus$summary)
+precorpus$summary <- gsub("([0-9])([^a-zA-Z -])", " ", precorpus$summary)
+precorpus$summary <- tolower(precorpus$summary)
+head(precorpus$summary)
+
+#require (quanteda)
+foodcorpus<- corpus(precorpus$summary)
+#names(foodcorpus)
+#summary(foodcorpus)
+foodcorpus<- corpus(precorpus$summary,
+                    docnames=precorpus$asin,
+                    docvar=data.frame(Rating= precorpus$overall))
+
+names(foodcorpus)   
+summary(foodcorpus)
+
+require(magrittr)
+library(NLP)
+library(stringr)
+
+
+dfm.simple<- dfm(foodcorpus, 
+                 remove = stopwords(source = "smart"), 
+                 verbose=TRUE, 
+                 stem=FALSE)
+
+topfeatures(dfm.simple, n=50)
+
+#swlist = c("s", "u", "mr", "two", "said", "like","for","us", "can", "may", "now", "according", "one")
+
+dfm.stem<- dfm(foodcorpus, 
+               remove = stopwords(source = "smart"), 
+               verbose=TRUE, 
+               stem=TRUE)
+
+topfeatures(dfm.stem, n=50)
+
+library(tidytext)
+library(textdata)
+
+#mydict <- dictionary(list(get_sentiments("bing")))
+
+words <- get_sentiments("bing")
+View(words)
+
+positive_df = words[words$sentiment=='positive', 'word']
+negative_df = words[words$sentiment=='negative', 'word']
+
+positive_list = as.list(positive_df)
+negative_list = as.list(negative_df)
+
+#positive_list <- split(positive_df, seq(nrow(positive_df)))
+#negative_list <- split(negative_df, seq(nrow(negative_df)))
+
+View(positive_list)
+
+mydict <- dictionary(list(negative = negative_list, 
+                          positive = positive_list))
+
+dfm.sentiment <- dfm(foodcorpus, 
+                     remove = stopwords(source = "smart"), 
+                     verbose=TRUE, 
+                     dictionary = mydict,
+                     stem=FALSE)
+
+topfeatures(dfm.sentiment)
+View(dfm.sentiment)
+
+```
+```{r}
+
+Result <- c("Positive", "Negative")
+quant <- as.integer(c(132963,28152))
+
+plot1 <- data.frame(Result, quant)
+
+library(ggplot2)
+ggplot(plot1, aes(x= Result ,y= quant, fill= quant)) +
+  geom_bar(stat="identity",position="dodge", width = 0.4, fill= "orange", color= "black") +
+  labs(x = "Results",y = "Frequency", title = paste("Sentimental Analysis")) +
+  geom_text(aes(label = quant), vjust = -0.3, size = 3.5)
+
+```
+
+```{r}
+
+mydict <- dictionary(list(Satisfied = c("great", "best", "yummy", "excellent", "free", "love", "awesome"),
+                          MildlySatisfied = c("better", "good", "tasty", "healthy", "yum", "organic",                                                                                                     "nice"),
+                          Neutral = c("expected", "nothing", "decent", "nice", "pretty", "ok", "favourite"),
+                          MildlyDissatisfied = c(""),
+                          Dissatisfied = c()))
+
+dfm.sentiment <- dfm(foodcorpus, 
+                     remove = stopwords(source = "smart"), 
+                     verbose=TRUE, 
+                     dictionary = mydict,
+                     stem=FALSE)
+
+topfeatures(dfm.sentiment)
+View(dfm.sentiment)
+
+Result <- c("Satisfied", "Mildly Satisfied","Neutral", "Mildly Dissatisfied", "Dissatisfied")
+quant <- as.integer(c(132963,28152))
+
+plot1 <- data.frame(Result, quant)
+
+library(ggplot2)
+ggplot(plot1, aes(x= Result ,y= quant, fill= quant)) +
+  geom_bar(stat="identity",position="dodge", width = 0.4, fill= "orange", color= "black") +
+  labs(x = "Results",y = "Frequency", title = paste("Sentimental Analysis")) +
+  geom_text(aes(label = quant), vjust = -0.3, size = 3.5)
+
+```
+
+
+
+
+
+

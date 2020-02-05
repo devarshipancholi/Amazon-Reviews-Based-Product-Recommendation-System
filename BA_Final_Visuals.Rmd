@@ -1,0 +1,52 @@
+---
+title: "BA Final Visualizations"
+author: "Shreyash Kathiriya"
+date: "12/11/2019"
+output: pdf_document
+---
+
+```{r}
+
+setwd("C://Users//shrey//OneDrive//Desktop//BUSINESS ANALYTICS//Final Project")
+review=read.csv("fine_food.csv", stringsAsFactors = FALSE)
+names(review)
+
+
+## vector source to corpus
+corpus_r = Corpus(VectorSource(review$summary)) 
+corpus_r=tm_map(corpus_r, tolower)
+corpus_r=tm_map(corpus_r, removePunctuation)
+corpus_r=tm_map(corpus_r, removeWords, stopwords("english"))
+corpus_r=tm_map(corpus_r, removeWords,c("also", "get", "both","company", "just","made", "can", "im", "dress", "just", "i"))
+
+## Stem document
+corpus_r=tm_map(corpus_r, stemDocument)
+
+##corpus content
+corpus_r[[3]][1]
+print(corpus_r)
+##------ Pie Chart ------##
+# most frequent terms
+term_freq <- freq_terms(corpus_r, 10)
+
+Review_df <- term_freq %>% arrange(desc(WORD)) %>%
+  mutate(prop = round(FREQ*100/sum(FREQ), 1),lab.ypos = cumsum(prop) - 0.5*prop)
+head(Review_df, 4)
+
+ggplot(Review_df, aes(x = "", y = prop, fill = WORD)) +
+  labs(x = NULL, y = NULL, fill = NULL, title = "Top 10 frequesnt used Words",caption="Source: Kaggle")+
+  geom_bar(width = 5, stat = "identity", color = "grey") +
+  geom_text(aes(y = lab.ypos, label = paste(round(prop), Sep=" %")), 
+            color = "white")+coord_polar("y", start = 0)+ggpubr::fill_palette("jco")+
+  theme_classic() +
+  theme(axis.line = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.title = element_text(hjust = 0.5, color = "#666666"))
+
+##------ Bar Chart ------##
+
+term_freq <- freq_terms(corpus_r, 20)
+
+```
+

@@ -1,0 +1,140 @@
+---
+title: "BA Cluster Final"
+author: "Devarshi Pancholi"
+date: "12/8/2019"
+output: pdf_document
+---
+
+```{r}
+##source: https://www.guru99.com/r-k-means-clustering.html
+
+library(readr)
+library(ggplot2)
+
+Review_Count <- read.csv("/Users/devarshipancholi/Desktop/dfReviews.csv")
+str(Review_Count)
+
+#viz
+#ggplot(df, aes(x = age, y = spend)) + geom_point()
+
+```
+
+```{r}
+
+library(cluster)
+
+# Compute k-means with k = 3
+set.seed(777)
+clu1 <- kmeans(Review_Count, 3)
+clu1
+clu1$cluster
+clu1$centers
+clu1$size
+
+clusplot(Review_Count, clu1$cluster, color=TRUE, shade=TRUE,
+         labels=2, lines=0)
+
+```
+
+```{r}
+library("flexclust")
+set.seed(777)
+dat <- Review_Count
+ind <- sample(nrow(dat), 300)
+
+#dat[["train"]] <- TRUE
+#dat[["train"]][ind] <- FALSE
+
+cl1 = kcca(dat, k=5, kccaFamily("kmeans"))
+cl1    
+```
+
+```{r}
+pred_train <- predict(cl1, newdata= dat[5,])
+
+#pred_test <- predict(cl1, newdata=dat[dat[["train"]]==FALSE, 1:2])
+#image(cl1)
+#points(dat[dat[["train"]]==TRUE, 1:2], col=pred_train, pch=19, cex=0.3)
+#points(dat[dat[["train"]]==FALSE, 1:2], col=pred_test, pch=22, bg="orange")
+
+```
+
+```{r}
+
+df1 <- data.frame(x=runif(100), y=runif(100))
+df2 <- data.frame(x=runif(100), y=runif(100))
+km <- kmeans(df1, centers=3)
+closest.cluster <- function(x) {
+  cluster.dist <- apply(km$centers, 1, function(y) sqrt(sum((x-y)^2)))
+  return(which.min(cluster.dist)[1])
+}
+clusters2 <- apply(df2, 1, closest.cluster)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+EXTRA CODE
+```{r}
+
+# Compute k-means with k = 5
+
+set.seed(1111)
+clu2 <- kmeans(Review_Count, 5)
+clu2
+clu2$cluster
+clu2$centers
+clu2$size
+
+
+clusplot(Review_Count, clu2$cluster, color=TRUE, shade=TRUE,
+         labels=5, lines=0)
+
+points(
+  clu2$centers,
+  pch = 4,
+  cex = 4,
+  lwd = 4,
+  col = "blue"
+)
+```
+
+```{r}
+
+# Compute k-means with k = 10
+
+clu3 <- kmeans(Review_Count, 10)
+clu3
+clu3$cluster
+clu3$centers
+clu3$size
+
+
+clusplot(Review_Count, clu3$cluster, color=TRUE, shade=TRUE,
+         labels=2, lines=0)
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
