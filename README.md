@@ -1,7 +1,4 @@
 # Amazon-Reviews-Based-Product-Recommendation-System
-Performed Text Analysis/NLP/Sentiment Analysis for about 568,000 Amazon Product Reviews. 
-Developed user profiles using tag words from product and user reviews. 
-Implemented a model using K-means Clustering algorithm to perform item based collaborative filtering.
 Amazon's recommendation system generates 35% of its total revenue and they use item-to-item
 collaborative filtering algorithm. The system matches a customer’s purchased and rated items to
 similar products in their list, which are then selected to be part of their recommendations.
